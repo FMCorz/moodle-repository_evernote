@@ -623,7 +623,6 @@ class repository_evernote extends repository {
             $result['page'] = $page;
             $result['pages'] = $pages;
         }
-        fb($result);
         return $result;
     }
 
