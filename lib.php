@@ -28,6 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
 require_once($CFG->libdir . '/oauthlib.php');
+require_once($CFG->libdir . '/textlib.class.php');
 require_once(dirname(__FILE__) . '/lib/evernote/lib/Thrift.php');
 require_once(dirname(__FILE__) . '/lib/evernote/lib/transport/THttpClient.php');
 require_once(dirname(__FILE__) . '/lib/evernote/lib/protocol/TBinaryProtocol.php');
@@ -40,6 +41,9 @@ use EDAM\Types\NoteSortOrder;
 
 /**
  * Repository class to access Evernote files.
+ *
+ * Throughout this class we are not using any natural ordering because the ordering provided by
+ * Evernote API is not natural and therefore we keep consistency.
  *
  * @package    repository
  * @subpackage evernote
@@ -245,7 +249,7 @@ class repository_evernote extends repository {
             if (empty($resource->attributes->fileName)) {
                 continue;
             }
-            $resources[] = array(
+            $resources[$resource->attributes->fileName . '-' . $resource->guid] = array(
                 'title' => $resource->attributes->fileName,
                 'date' => $note->updated / 1000,
                 'datemodified' => $note->updated / 1000,
@@ -256,6 +260,7 @@ class repository_evernote extends repository {
                 'thumbnail_height' => 64,
                 'thumbnail_width' => 64,
             );
+            collatorlib::ksort($resources);
         }
         return $resources;
     }
@@ -279,10 +284,12 @@ class repository_evernote extends repository {
                 continue;
             } else if (empty($stack) && !empty($notebookstack)) {
                 // If we do not filter per stack, and this notebook has a stack, we populate it in the list.
-                if (isset($notebooks[$notebookstack])) {
+                // Collision between stacks and notebooks in unlikely to happen, but well...
+                $stackcode = $notebookstack . '-=-1Make2Me3Unique4Please5-=-';
+                if (isset($notebooks[$stackcode])) {
                     continue;
                 }
-                $notebooks[$notebookstack] = array(
+                $notebooks[$stackcode] = array(
                     'title' => $notebookstack,
                     'path' => $path . 'stack:' . $notebookstack,
                     'thumbnail' => $OUTPUT->pix_url(file_folder_icon(64))->out(false),
@@ -292,7 +299,7 @@ class repository_evernote extends repository {
                 );
             } else {
                 // If we arrived here, we probably want to display the notebook.
-                $notebooks[] = array(
+                $notebooks[$notebook->name] = array(
                     'title' => $notebook->name,
                     'path' => $path . 'notebook:' . $notebook->guid . '|' . $notebook->name,
                     'date' => $notebook->serviceUpdated / 1000,
@@ -305,11 +312,14 @@ class repository_evernote extends repository {
                 );
             }
         }
+        collatorlib::ksort($notebooks);
         return $notebooks;
     }
 
     /**
      * Build the list of notes from a note list.
+     *
+     * This method does not take care of ordering and Evernote SDK will do that for us.
      *
      * @param array $notelist list of Note or NoteMetadata objects.
      * @param string $path the path to build the list on.
@@ -349,7 +359,7 @@ class repository_evernote extends repository {
         $path = !empty($path) ? trim($path, '/') . '/' : '';
         $searchs = array();
         foreach ($savedsearchs as $search) {
-            $searchs[] = array(
+            $searchs[$search->name] = array(
                 'title' => $search->name,
                 'path' => $path . 'searchs:' . $search->guid . '|' . $search->name,
                 'thumbnail' => $OUTPUT->pix_url(file_folder_icon(64))->out(false),
@@ -358,6 +368,7 @@ class repository_evernote extends repository {
                 'children' => array(),
             );
         }
+        collatorlib::ksort($searchs);
         return $searchs;
     }
 
@@ -374,7 +385,7 @@ class repository_evernote extends repository {
         // TODO handle nested tags.
         $tags = array();
         foreach ($tagslist as $tag) {
-            $tags[] = array(
+            $tags[$tag->name] = array(
                 'title' => $tag->name,
                 'path' => $path . 'tags:' . $tag->guid . '|' . $tag->name,
                 'thumbnail' => $OUTPUT->pix_url(file_folder_icon(64))->out(false),
@@ -383,6 +394,7 @@ class repository_evernote extends repository {
                 'children' => array(),
             );
         }
+        collatorlib::ksort($tags);
         return $tags;
     }
 
@@ -541,7 +553,6 @@ class repository_evernote extends repository {
                     $tags = $this->get_notestore()->listTags($this->accesstoken);
                     $folders = $this->build_tags_list($tags, $rootpath);
                 } else {
-                    // TODO handle nested tags.
                     $filter = new NoteFilter(array('tagGuids' => array($guid)));
                     $notesmetadatalist = $this->find_notes_metadata($filter, $offset, $this->itemsperpage);
                     $pages = ceil($notesmetadatalist->totalNotes / $this->itemsperpage);
@@ -550,13 +561,11 @@ class repository_evernote extends repository {
                 break;
             // Display the notebooks and stacks.
             case 'notebooks':
-                // TODO: Ordering.
                 $notebooks = $this->get_notestore()->listNotebooks($this->accesstoken);
                 $folders = $this->build_notebooks_list($notebooks, $path);
                 break;
             // Display notebooks within a stack.
             case 'stack':
-                // TODO: Ordering.
                 $notebooks = $this->get_notestore()->listNotebooks($this->accesstoken);
                 $folders = $this->build_notebooks_list($notebooks, $path, $guid);
                 break;
@@ -582,7 +591,6 @@ class repository_evernote extends repository {
                 break;
             // This is a note.
             case 'note':
-                // TODO: Ordering.
                 $note = $this->get_notestore()->getNote($this->accesstoken, $guid, false, false, false, false);
                 $files = $this->build_note_content($note);
                 break;
