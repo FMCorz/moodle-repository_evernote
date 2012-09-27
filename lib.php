@@ -65,6 +65,12 @@ class repository_evernote extends repository {
     protected $manageurl = 'https://www.evernote.com/Home.action';
 
     /**
+     * URL to the Web logout.
+     * @var string
+     */
+    protected $logouturl = 'https://www.evernote.com/Logout.action';
+
+    /**
      * Token received after a valid OAuth authentication.
      * @var string
      */
@@ -502,6 +508,8 @@ class repository_evernote extends repository {
             'path' => array(),
             'list' => array(),
             'manage' => $this->manageurl,
+            'logouturl' => $this->logouturl,
+            'nosearch' => true,
             'dynload' => true
         );
         $folders = array();
@@ -699,6 +707,7 @@ class repository_evernote extends repository {
      * @return array|string information/content of the login form
      */
     public function print_login() {
+        // TODO: Handle errors with exception when request_token fails, but first we need to improve request_token.
         $result = $this->oauth->request_token();
         set_user_preference($this->settingprefix.'tokensecret', $result['oauth_token_secret']);
         $url = $result['authorize_url'];
