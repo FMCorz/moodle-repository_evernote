@@ -11,6 +11,7 @@ Features
 - Browse your notebooks.
 - Browse your tags.
 - Browse your saved searchs.
+- Search through your notes.
 
 Requirements
 ------------
@@ -32,7 +33,6 @@ Todo
 - Support for file references.
 - Enable paging (blocked by MDL-35664).
 - Decrease the version required (ideally 2.3.0, investigate branch for 2.2).
-- Set up a search field.
 - Investigate advanced search possibilities.
 
 License

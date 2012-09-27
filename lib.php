@@ -97,6 +97,12 @@ class repository_evernote extends repository {
     protected $enablepaging = false;
 
     /**
+     * Maximum results of a search query. Must respect EDAM_USER_NOTES_MAX.
+     * @var int
+     */
+    protected $searchmaxresults = 50;
+
+    /**
      * Session key to store the path in, will probably be removed after MDL-35664.
      * @var string
      */
@@ -233,6 +239,12 @@ class repository_evernote extends repository {
                         );
                     }
                     break;
+                case 'mysearch':
+                    $breadcrumb[] = array(
+                        'name' => get_string('searchresults'),
+                        'path' => 'mysearch:' . $guid
+                    );
+                    break;
 
             }
             $tmp = end($breadcrumb);
@@ -268,7 +280,8 @@ class repository_evernote extends repository {
             );
             collatorlib::ksort($resources);
         }
-        return $resources;
+        // Get rid of the keys as file picker does not support them.
+        return array_values($resources);
     }
 
     /**
@@ -509,7 +522,6 @@ class repository_evernote extends repository {
             'list' => array(),
             'manage' => $this->manageurl,
             'logouturl' => $this->logouturl,
-            'nosearch' => true,
             'dynload' => true
         );
         $folders = array();
@@ -601,6 +613,10 @@ class repository_evernote extends repository {
             case 'note':
                 $note = $this->get_notestore()->getNote($this->accesstoken, $guid, false, false, false, false);
                 $files = $this->build_note_content($note);
+                break;
+            // Custom search from the user.
+            case 'mysearch':
+                return $this->search($guid, 0);
                 break;
             // Display the default choices.
             case 'root':
@@ -722,6 +738,37 @@ class repository_evernote extends repository {
             echo html_writer::link($url, get_string('login', 'repository'), array('target' => '_blank'));
         }
         return array();
+    }
+
+    /**
+     * Generates the search form.
+     *
+     * @return string HTML of the search form.
+     */
+    public function print_search() {
+        return parent::print_search();
+    }
+
+    /**
+     * Perform a search and returns results as {@link repository_evernote::get_file()} does.
+     *
+     * @param string $search_text text to search for.
+     * @param int $page page we are on.
+     * @return array of results.
+     */
+    public function search($search_text, $page = 0) {
+        $filter = new NoteFilter(array(
+            'words' => $search_text,
+            'ascending' => true,
+            'order' => NoteSortOrder::TITLE
+        ));
+        $notelist = $this->get_notestore()->findNotes($this->accesstoken, $filter, 0, $this->searchmaxresults);
+        $results = $this->build_notes_list($notelist->notes, '', true);
+        $list = array();
+        $list['path'] = $this->build_breadcrumb('mysearch:' . $search_text);
+        $list['list'] = $results;
+        $list['dynload'] = false;
+        return $list;
     }
 
     /**
