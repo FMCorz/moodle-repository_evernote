@@ -32,9 +32,11 @@ require_once(dirname(__FILE__) . '/lib/evernote/lib/Thrift.php');
 require_once(dirname(__FILE__) . '/lib/evernote/lib/transport/THttpClient.php');
 require_once(dirname(__FILE__) . '/lib/evernote/lib/protocol/TBinaryProtocol.php');
 require_once(dirname(__FILE__) . '/lib/evernote/lib/packages/NoteStore/NoteStore.php');
+require_once(dirname(__FILE__) . '/lib/evernote/lib/packages/Types/Types_types.php');
 use EDAM\NoteStore\NoteStoreClient;
 use EDAM\NoteStore\NoteFilter;
 use EDAM\NoteStore\NotesMetadataResultSpec;
+use EDAM\Types\NoteSortOrder;
 
 /**
  * Repository class to access Evernote files.
@@ -420,6 +422,10 @@ class repository_evernote extends repository {
      * @return NotesMedatadataList of search results
      */
     public function find_notes_metadata($filter, $offset, $limit) {
+        if ($filter->order == null) {
+            $filter->order = NoteSortOrder::TITLE;
+            $filter->ascending = true;
+        }
         $resultspec = new NotesMetaDataResultSpec(array(
             'includeTitle' => true,
             'includeCreated' => true,
@@ -544,11 +550,13 @@ class repository_evernote extends repository {
                 break;
             // Display the notebooks and stacks.
             case 'notebooks':
+                // TODO: Ordering.
                 $notebooks = $this->get_notestore()->listNotebooks($this->accesstoken);
                 $folders = $this->build_notebooks_list($notebooks, $path);
                 break;
             // Display notebooks within a stack.
             case 'stack':
+                // TODO: Ordering.
                 $notebooks = $this->get_notestore()->listNotebooks($this->accesstoken);
                 $folders = $this->build_notebooks_list($notebooks, $path, $guid);
                 break;
@@ -574,6 +582,7 @@ class repository_evernote extends repository {
                 break;
             // This is a note.
             case 'note':
+                // TODO: Ordering.
                 $note = $this->get_notestore()->getNote($this->accesstoken, $guid, false, false, false, false);
                 $files = $this->build_note_content($note);
                 break;
