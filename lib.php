@@ -103,6 +103,12 @@ class repository_evernote extends repository {
     protected $searchmaxresults = 50;
 
     /**
+     * Enable dynamic loading of the search results.
+     * @var bool
+     */
+    protected $searchdynload = true;
+
+    /**
      * Session key to store the path in, will probably be removed after MDL-35664.
      * @var string
      */
@@ -757,18 +763,32 @@ class repository_evernote extends repository {
      * @return array of results.
      */
     public function search($search_text, $page = 0) {
+        $result = array();
+        $path = 'mysearch:' . $search_text;
+        $offset = 0;
         $filter = new NoteFilter(array(
             'words' => $search_text,
             'ascending' => true,
             'order' => NoteSortOrder::TITLE
         ));
-        $notelist = $this->get_notestore()->findNotes($this->accesstoken, $filter, 0, $this->searchmaxresults);
-        $results = $this->build_notes_list($notelist->notes, '', true);
-        $list = array();
-        $list['path'] = $this->build_breadcrumb('mysearch:' . $search_text);
-        $list['list'] = $results;
-        $list['dynload'] = false;
-        return $list;
+
+        if ($this->searchdynload) {
+            $notelist = $this->find_notes_metadata($filter, $offset, $this->searchmaxresults);
+            $results = $this->build_notes_list($notelist->notes, $path, false);
+        }  else {
+            $filter = new NoteFilter(array(
+                'words' => $search_text,
+                'ascending' => true,
+                'order' => NoteSortOrder::TITLE
+            ));
+            $notelist = $this->get_notestore()->findNotes($this->accesstoken, $filter, $offset, $this->searchmaxresults);
+            $results = $this->build_notes_list($notelist->notes, '', true);
+        }
+
+        $result['path'] = $this->build_breadcrumb($path);
+        $result['list'] = $results;
+        $result['dynload'] = $this->searchdynload;
+        return $result;
     }
 
     /**
