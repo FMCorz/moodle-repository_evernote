@@ -18,6 +18,11 @@ Requirements
 
 Moodle 2.3.2 or greater.
 
+Advanced search
+---------------
+
+The search field supports the advanced search syntax common to Evernote applications. Find out more at [Using Evernote's advanced search operators](https://support.evernote.com/ics/support/KBAnswer.asp?questionID=535) and [Evernote Search Grammar](http://dev.evernote.com/documentation/cloud/chapters/search_grammar.php).
+
 Install
 -------
 
@@ -33,7 +38,6 @@ Todo
 - Support for file references.
 - Enable paging (blocked by MDL-35664).
 - Decrease the version required (ideally 2.3.0, investigate branch for 2.2).
-- Investigate advanced search possibilities.
 
 License
 -------
