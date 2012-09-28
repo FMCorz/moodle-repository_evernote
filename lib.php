@@ -54,6 +54,8 @@ class repository_evernote extends repository {
 
     /**
      * URL to the API.
+     * Production services: https://www.evernote.com
+     * Development services: https://sandbox.evernote.com
      * @var string
      */
     protected $api = 'https://www.evernote.com';
@@ -514,10 +516,17 @@ class repository_evernote extends repository {
      * @return array containing information about the file saved
      */
     public function get_file($reference, $filename = '') {
-        $reference = unserialize($reference);
-        if (strpos($reference->source, 'resource:') === 0) {
+        // Ensure compatibility with earlier versions of Moodle 2.3 which did not use repository::get_file_reference().
+        $unserialized = @unserialize($reference);
+        if ($unserialized) {
+            $ref = $unserialized;
+        } else {
+            $ref = new stdClass();
+            $ref->source = $reference;
+        }
+        if (strpos($ref->source, 'resource:') === 0) {
             // This file is downloaded directly from the user account.
-            list($lost, $guid) = explode(':', $reference->source, 2);
+            list($lost, $guid) = explode(':', $ref->source, 2);
             try {
                 $resource = $this->get_notestore()->getResource($this->accesstoken, $guid, true, false, true, false);
                 $path = $this->prepare_file($filename);

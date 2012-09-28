@@ -16,7 +16,7 @@ Features
 Requirements
 ------------
 
-Moodle 2.3.2 or greater.
+Moodle 2.3.0 or greater.
 
 Advanced search
 ---------------
@@ -37,7 +37,7 @@ Todo
 
 - Support for file references.
 - Enable paging (blocked by MDL-35664).
-- Decrease the version required (ideally 2.3.0, investigate branch for 2.2).
+- Investigate backward compatibility for Moodle 2.2.
 
 License
 -------
