@@ -167,7 +167,10 @@ class repository_evernote extends repository {
      * @return array containing name and path of each crumb
      */
     public function build_breadcrumb($path) {
-        $breadcrumb = array(array('name' => get_string('evernote', 'repository_evernote'), 'path' => 'root:'));
+        $breadcrumb = array(array(
+            'name' => get_string('evernote', 'repository_evernote'),
+            'path' => $this->build_node_path('root')
+        ));
         $bread = explode('/', $path);
         $crumbtrail = '';
         foreach ($bread as $crumb) {
@@ -662,7 +665,7 @@ class repository_evernote extends repository {
                 foreach ($options as $key => $option) {
                     $folders[] = array(
                         'title' => $option,
-                        'path' => $this->build_node_path('root'),
+                        'path' => $this->build_node_path($key),
                         'thumbnail' => $OUTPUT->pix_url(file_folder_icon(64))->out(false),
                         'thumbnail_height' => 64,
                         'thumbnail_width' => 64,
