@@ -682,6 +682,9 @@ class repository_evernote extends repository {
                 break;
         }
 
+        // Filtering the files to remove non-compatible files.
+        $files = array_filter($files, array($this, 'filter'));
+
         $breadcrumb = $this->build_breadcrumb($path);
         $result['path'] = $breadcrumb;
         $result['list'] = array_merge($folders, $files);
