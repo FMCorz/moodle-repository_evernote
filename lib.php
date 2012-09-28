@@ -121,12 +121,14 @@ class repository_evernote extends repository {
     protected $settingprefix = 'evernote_';
 
     /**
-     * Disable HTTPS in Evernote SDK.
+     * SSL Compatibility mode.
      * Some versions of OpenSSL will conflict with Evernote when validating the certificate.
+     * When we can, we force SSL v3, but sometimes we might have to disable SSL complitely.
+     * Using this feature is highly discouraged and not supported by Moodle < 2.3.2!
      * @see http://discussion.evernote.com/topic/26978-ssl-handshake-problems/
      * @var bool
      */
-    protected $usehttpsinsdk = false;
+    protected $sslcompatibilitymode = false;
 
     /**
      * Cache for the NoteStoreClient object.
@@ -152,7 +154,7 @@ class repository_evernote extends repository {
         parent::__construct($repositoryid, $context, $options, $readonly);
 
         $config = get_config('evernote');
-        $this->usehttpsinsdk = !$config->nohttps;
+        $this->sslcompatibilitymode = isset($config->sslcompatibilitymode) ? $config->sslcompatibilitymode : 0;
         $this->accesstoken = get_user_preferences($this->settingprefix.'accesstoken', null);
         $this->notestoreurl = get_user_preferences($this->settingprefix.'notestoreurl', null);
 
@@ -710,7 +712,8 @@ class repository_evernote extends repository {
                     $parts['port'] = 80;
                 }
             }
-            if (!$this->usehttpsinsdk) {
+            // Disable the use of HTTPS to ensure more compatibility.
+            if ($this->sslcompatibilitymode) {
                 $parts['port'] = 80;
                 $parts['scheme'] = 'http';
             }
@@ -727,7 +730,7 @@ class repository_evernote extends repository {
      * @return array of option names
      */
     public static function get_type_option_names() {
-        $options = array('key', 'secret', 'nohttps');
+        $options = array('key', 'secret', 'sslcompatibilitymode');
         return array_merge(parent::get_type_option_names(), $options);
     }
 
@@ -742,10 +745,14 @@ class repository_evernote extends repository {
         $args['request_token_api'] = $this->api . '/oauth';
         $args['access_token_api'] = $this->api . '/oauth';
         $args['authorize_url'] = $this->api . '/OAuth.action';
+
         $this->oauth = new oauth_helper($args);
 
-        // Forcing the SSL version will prevent some random behaviours with OpenSSL.
-        $this->oauth->setup_oauth_http_options(array('CURLOPT_SSLVERSION' => 3));
+        // Forcing the SSL version will prevent some random behaviours with OpenSSL. Unfortunately, the method
+        // to set options on OAuth has only been introduced with 2.3.2.
+        if ($this->sslcompatibilitymode) {
+            $this->oauth->setup_oauth_http_options(array('CURLOPT_SSLVERSION' => 3));
+        }
     }
 
     /**
@@ -850,15 +857,17 @@ class repository_evernote extends repository {
         parent::type_config_form($mform, $classname);
         $key    = get_config('evernote', 'key') || '';
         $secret = get_config('evernote', 'secret') || '';
-        $nohttps  = get_config('evernote', 'nohttps') || 0;
+        $sslcompatibilitymode  = get_config('evernote', 'sslcompatibilitymode') || 0;
 
         $mform->addElement('text', 'key', get_string('key', 'repository_evernote'),
                 array('value' => $key, 'size' => '40'));
         $mform->addElement('text', 'secret', get_string('secret', 'repository_evernote'),
                 array('value' => $secret, 'size' => '40'));
-        $mform->addElement('checkbox', 'nohttps', get_string('nohttps', 'repository_evernote'));
-        $mform->setDefault('nohttps', $nohttps);
-        $mform->addElement('static', 'nohttpshelp', '', get_string('nohttps_help', 'repository_evernote'));
+        $mform->addElement('checkbox', 'sslcompatibilitymode',
+                get_string('sslcompatibilitymode', 'repository_evernote'));
+        $mform->setDefault('sslcompatibilitymode', $sslcompatibilitymode);
+        $mform->addElement('static', 'sslcompatibilitymodehelp', '',
+                get_string('sslcompatibilitymode_help', 'repository_evernote'));
 
         $strrequired = get_string('required');
         $mform->addRule('key', $strrequired, 'required', null, 'client');
