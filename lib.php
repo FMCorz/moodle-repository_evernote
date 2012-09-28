@@ -181,82 +181,98 @@ class repository_evernote extends repository {
         $bread = explode('/', $path);
         $crumbtrail = '';
         foreach ($bread as $crumb) {
-            list($mode, $guid) = explode(':', $crumb, 2);
+            list($mode, $guid, $name) = $this->explode_node_path($crumb);
             switch ($mode) {
                 case 'all':
                     $breadcrumb[] = array(
                         'name' => get_string('allnotes', 'repository_evernote'),
-                        'path' => 'all:'
+                        'path' => $this->build_node_path($mode)
                     );
                     break;
                 case 'tags':
                     $breadcrumb[] = array(
                         'name' => get_string('tags', 'repository_evernote'),
-                        'path' => $crumbtrail . 'tags:'
+                        'path' => $this->build_node_path($mode, '', '', $crumbtrail)
                     );
-                    if (strpos($guid, '|') !== false) {
-                        list($nothing, $name) = explode('|', $guid, 2);
+                    if (!empty($name)) {
                         $breadcrumb[] = array(
                             'name' => $name,
-                            'path' => $crumbtrail . 'tags:' . $guid
+                            'path' => $this->build_node_path($mode, $guid, $name, $crumbtrail)
                         );
                     }
                     break;
                 case 'notebooks':
                     $breadcrumb[] = array(
                         'name' => get_string('notebooks', 'repository_evernote'),
-                        'path' => $crumbtrail . 'notebooks:'
+                        'path' => $this->build_node_path($mode, '', '', $crumbtrail)
                     );
                     break;
                 case 'stack':
                     $breadcrumb[] = array(
                         'name' => $guid,
-                        'path' => $crumbtrail . 'stack:' . $guid
+                        'path' => $this->build_node_path($mode, $guid, '', $crumbtrail)
                     );
                     break;
                 case 'notebook':
-                    if (strpos($guid, '|') !== false) {
-                        list($nothing, $name) = explode('|', $guid, 2);
+                    if (!empty($name)) {
                         $breadcrumb[] = array(
                             'name' => $name,
-                            'path' => $crumbtrail . 'notebooks:' . $guid
+                            'path' => $this->build_node_path($mode, $guid, $name, $crumbtrail)
                         );
                     }
                     break;
                 case 'searchs':
                     $breadcrumb[] = array(
                         'name' => get_string('savedsearchs', 'repository_evernote'),
-                        'path' => $crumbtrail . 'searchs:'
+                        'path' => $this->build_node_path($mode, '', '', $crumbtrail)
                     );
-                    if (strpos($guid, '|') !== false) {
-                        list($nothing, $name) = explode('|', $guid, 2);
+                    if (!empty($name)) {
                         $breadcrumb[] = array(
                             'name' => $name,
-                            'path' => $crumbtrail . 'searchs:' . $guid
+                            'path' => $this->build_node_path($mode, $guid, $name, $crumbtrail)
                         );
                     }
                     break;
                 case 'note':
-                    if (strpos($guid, '|') !== false) {
-                        list($nothing, $name) = explode('|', $guid, 2);
+                    if (!empty($name)) {
                         $breadcrumb[] = array(
                             'name' => $name,
-                            'path' => $crumbtrail . 'note:' . $guid
+                            'path' => $this->build_node_path($mode, $guid, $name, $crumbtrail)
                         );
                     }
                     break;
                 case 'mysearch':
                     $breadcrumb[] = array(
                         'name' => get_string('searchresults'),
-                        'path' => 'mysearch:' . $guid
+                        'path' => $this->build_node_path($mode, $guid, '', $crumbtrail)
                     );
                     break;
 
             }
             $tmp = end($breadcrumb);
-            $crumbtrail .= trim($tmp['path'], '/') . '/';
+            $crumbtrail = $tmp['path'];
         }
         return $breadcrumb;
+    }
+
+    /**
+     * Generates a safe path to a node.
+     *
+     * @param string $key of the node, should match [a-z]+
+     * @param string $value of the node, will be URL encoded.
+     * @param string $name of the node, will be URL encoded.
+     * @param string $root to append the node on, must be a result of this function.
+     * @return string path to the node.
+     */
+    public function build_node_path($key, $value = '', $name = '', $root = '') {
+        $path = $key . ':' . urlencode($value);
+        if (!empty($name)) {
+            $path .= '|' . urlencode($name);
+        }
+        if (!empty($root)) {
+            $path = trim($root, '/') . '/' . $path;
+        }
+        return $path;
     }
 
     /**
@@ -317,6 +333,7 @@ class repository_evernote extends repository {
                 $notebooks[$stackcode] = array(
                     'title' => $notebookstack,
                     'path' => $path . 'stack:' . $notebookstack,
+                    'path' => $this->build_node_path('stack', $notebookstack, '', $path),
                     'thumbnail' => $OUTPUT->pix_url(file_folder_icon(64))->out(false),
                     'thumbnail_height' => 64,
                     'thumbnail_width' => 64,
@@ -326,7 +343,7 @@ class repository_evernote extends repository {
                 // If we arrived here, we probably want to display the notebook.
                 $notebooks[$notebook->name] = array(
                     'title' => $notebook->name,
-                    'path' => $path . 'notebook:' . $notebook->guid . '|' . $notebook->name,
+                    'path' => $this->build_node_path('notebook', $notebook->guid, $notebook->name, $path),
                     'date' => $notebook->serviceUpdated / 1000,
                     'datemodified' => $notebook->serviceUpdated / 1000,
                     'datecreated' => $notebook->serviceCreated / 1000,
@@ -359,7 +376,7 @@ class repository_evernote extends repository {
             $children = $includeresources ? $this->build_note_content($note, $path) : array();
             $notes[] = array(
                 'title' => $note->title,
-                'path' => $path . 'note:' . $note->guid . '|' . $note->title,
+                'path' => $this->build_node_path('note', $note->guid, $note->title, $path),
                 'date' => $note->updated / 1000,
                 'datemodified' => $note->updated / 1000,
                 'datecreated' => $note->created / 1000,
@@ -386,7 +403,7 @@ class repository_evernote extends repository {
         foreach ($savedsearchs as $search) {
             $searchs[$search->name] = array(
                 'title' => $search->name,
-                'path' => $path . 'searchs:' . $search->guid . '|' . $search->name,
+                'path' => $this->build_node_path('searchs', $search->guid, $search->name, $path),
                 'thumbnail' => $OUTPUT->pix_url(file_folder_icon(64))->out(false),
                 'thumbnail_height' => 64,
                 'thumbnail_width' => 64,
@@ -412,7 +429,7 @@ class repository_evernote extends repository {
         foreach ($tagslist as $tag) {
             $tags[$tag->name] = array(
                 'title' => $tag->name,
-                'path' => $path . 'tags:' . $tag->guid . '|' . $tag->name,
+                'path' => $this->build_node_path('tags', $tag->guid, $tag->name, $path),
                 'thumbnail' => $OUTPUT->pix_url(file_folder_icon(64))->out(false),
                 'thumbnail_height' => 64,
                 'thumbnail_width' => 64,
@@ -448,6 +465,31 @@ class repository_evernote extends repository {
      */
     public function check_login() {
         return !empty($this->accesstoken) && !empty($this->notestoreurl);
+    }
+
+    /**
+     * Returns information about a node in a path.
+     *
+     * @see repository_evernote::build_node_path()
+     * @param string $node to extrat information from.
+     * @return array about the node.
+     */
+    public function explode_node_path($node) {
+        list($key, $guid) = explode(':', $node, 2);
+        $name = '';
+        if (strpos($guid, '|') !== false) {
+            list($guid, $name) = explode('|', $guid, 2);
+            $name = urldecode($name);
+        }
+        $guid = urldecode($guid);
+        return array(
+            0 => $key,
+            1 => $guid,
+            2 => $name,
+            'key' => $key,
+            'guid' => $guid,
+            'name' => $name
+        );
     }
 
     /**
@@ -551,13 +593,7 @@ class repository_evernote extends repository {
         // We analyse the path to extract what to browse.
         $trail = explode('/', $path);
         $uri = array_pop($trail);
-        list($mode, $guid) = explode(':', $uri, 2);
-
-        // The name of the node can be stored in the $guid, remove it if is the case. Except for stacks which
-        // guid is already its name.
-        if (strpos($guid, '|') !== false && $mode != 'stack') {
-            list($guid, $nothing) = explode('|', $guid, 2);
-        }
+        list($mode, $guid, $name) = $this->explode_node_path($uri);
 
         // Build the path to get to what we are browsing.
         $rootpath = '';
@@ -636,7 +672,7 @@ class repository_evernote extends repository {
                 foreach ($options as $key => $option) {
                     $folders[] = array(
                         'title' => $option,
-                        'path' => $key . ':',
+                        'path' => $this->build_node_path('root'),
                         'thumbnail' => $OUTPUT->pix_url(file_folder_icon(64))->out(false),
                         'thumbnail_height' => 64,
                         'thumbnail_width' => 64,
@@ -764,7 +800,7 @@ class repository_evernote extends repository {
      */
     public function search($search_text, $page = 0) {
         $result = array();
-        $path = 'mysearch:' . $search_text;
+        $path = $this->build_node_path('mysearch', $search_text);
         $offset = 0;
         $filter = new NoteFilter(array(
             'words' => $search_text,
