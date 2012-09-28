@@ -153,21 +153,9 @@ class repository_evernote extends repository {
     function __construct($repositoryid, $context = SYSCONTEXTID, $options = array(), $readonly = 0) {
         parent::__construct($repositoryid, $context, $options, $readonly);
 
-        $config = get_config('evernote');
-        $this->sslcompatibilitymode = isset($config->sslcompatibilitymode) ? $config->sslcompatibilitymode : 0;
+        $this->sslcompatibilitymode = get_config('evernote', 'sslcompatibilitymode') || 0;
         $this->accesstoken = get_user_preferences($this->settingprefix.'accesstoken', null);
         $this->notestoreurl = get_user_preferences($this->settingprefix.'notestoreurl', null);
-
-        $callbackurl = new moodle_url('/repository/repository_callback.php', array(
-            'callback' => 'yes',
-            'repo_id' => $repositoryid
-        ));
-
-        $args = array();
-        $args['oauth_consumer_key'] = $config->key;
-        $args['oauth_consumer_secret'] = $config->secret;
-        $args['oauth_callback'] = $callbackurl->out(false);
-        $this->init_oauth($args);
     }
 
     /**
@@ -451,7 +439,7 @@ class repository_evernote extends repository {
         $token  = optional_param('oauth_token', '', PARAM_TEXT);
         $verifier  = optional_param('oauth_verifier', '', PARAM_TEXT);
         $secret = get_user_preferences($this->settingprefix.'tokensecret', '');
-        $access = $this->oauth->get_access_token($token, $secret, $verifier);
+        $access = $this->get_oauth()->get_access_token($token, $secret, $verifier);
         $notestore  = $access['edam_noteStoreUrl'];
         $userid  = $access['edam_userId'];
         $accesstoken  = $access['oauth_token'];
@@ -725,6 +713,37 @@ class repository_evernote extends repository {
     }
 
     /**
+     * Get the OAuth object.
+     *
+     * @return oauth_helper object.
+     */
+    protected function get_oauth() {
+        if (empty($this->oauth)) {
+            $config = get_config('evernote');
+            $callbackurl = new moodle_url('/repository/repository_callback.php', array(
+                'callback' => 'yes',
+                'repo_id' => $this->id
+            ));
+
+            $args['oauth_consumer_key'] = $config->key;
+            $args['oauth_consumer_secret'] = $config->secret;
+            $args['oauth_callback'] = $callbackurl->out(false);
+            $args['api_root'] = $this->api;
+            $args['request_token_api'] = $this->api . '/oauth';
+            $args['access_token_api'] = $this->api . '/oauth';
+            $args['authorize_url'] = $this->api . '/OAuth.action';
+            $this->oauth = new oauth_helper($args);
+
+            // Forcing the SSL version will prevent some random behaviours with OpenSSL. Unfortunately, the method
+            // to set options on OAuth has only been introduced with 2.3.2.
+            if ($this->sslcompatibilitymode) {
+                $this->oauth->setup_oauth_http_options(array('CURLOPT_SSLVERSION' => 3));
+            }
+        }
+        return $this->oauth;
+    }
+
+    /**
      * Return the list of options this repository supports.
      *
      * @return array of option names
@@ -732,27 +751,6 @@ class repository_evernote extends repository {
     public static function get_type_option_names() {
         $options = array('key', 'secret', 'sslcompatibilitymode');
         return array_merge(parent::get_type_option_names(), $options);
-    }
-
-    /**
-     * Initialise the OAuth object.
-     *
-     * @param array $args parameters to pass to {@link oauth_helper::__construct()}
-     * @return void
-     */
-    protected function init_oauth($args) {
-        $args['api_root'] = $this->api;
-        $args['request_token_api'] = $this->api . '/oauth';
-        $args['access_token_api'] = $this->api . '/oauth';
-        $args['authorize_url'] = $this->api . '/OAuth.action';
-
-        $this->oauth = new oauth_helper($args);
-
-        // Forcing the SSL version will prevent some random behaviours with OpenSSL. Unfortunately, the method
-        // to set options on OAuth has only been introduced with 2.3.2.
-        if ($this->sslcompatibilitymode) {
-            $this->oauth->setup_oauth_http_options(array('CURLOPT_SSLVERSION' => 3));
-        }
     }
 
     /**
@@ -776,7 +774,7 @@ class repository_evernote extends repository {
      */
     public function print_login() {
         // TODO: Handle errors with exception when request_token fails, but first we need to improve request_token.
-        $result = $this->oauth->request_token();
+        $result = $this->get_oauth()->request_token();
         set_user_preference($this->settingprefix.'tokensecret', $result['oauth_token_secret']);
         $url = $result['authorize_url'];
         if ($this->options['ajax']) {
