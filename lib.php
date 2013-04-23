@@ -129,6 +129,7 @@ class repository_evernote extends repository {
      * Using this feature is highly discouraged and not supported by Moodle < 2.3.2!
      * @see http://discussion.evernote.com/topic/26978-ssl-handshake-problems/
      * @var bool
+     * @deprecated since 1.0.1
      */
     protected $sslcompatibilitymode = false;
 
@@ -155,7 +156,6 @@ class repository_evernote extends repository {
     function __construct($repositoryid, $context = SYSCONTEXTID, $options = array(), $readonly = 0) {
         parent::__construct($repositoryid, $context, $options, $readonly);
 
-        $this->sslcompatibilitymode = get_config('evernote', 'sslcompatibilitymode') || 0;
         $this->accesstoken = get_user_preferences($this->settingprefix.'accesstoken', null);
         $this->notestoreurl = get_user_preferences($this->settingprefix.'notestoreurl', null);
     }
@@ -712,11 +712,6 @@ class repository_evernote extends repository {
                     $parts['port'] = 80;
                 }
             }
-            // Disable the use of HTTPS to ensure more compatibility.
-            if ($this->sslcompatibilitymode) {
-                $parts['port'] = 80;
-                $parts['scheme'] = 'http';
-            }
             $notestorehttpclient = new THttpClient($parts['host'], $parts['port'], $parts['path'], $parts['scheme']);
             $notestoreprotocol = new TBinaryProtocol($notestorehttpclient);
             $this->notestore = new NoteStoreClient($notestoreprotocol, $notestoreprotocol);
@@ -745,12 +740,6 @@ class repository_evernote extends repository {
             $args['access_token_api'] = $this->api . '/oauth';
             $args['authorize_url'] = $this->api . '/OAuth.action';
             $this->oauth = new oauth_helper($args);
-
-            // Forcing the SSL version will prevent some random behaviours with OpenSSL. Unfortunately, the method
-            // to set options on OAuth has only been introduced with 2.3.2.
-            if ($this->sslcompatibilitymode) {
-                $this->oauth->setup_oauth_http_options(array('CURLOPT_SSLVERSION' => 3));
-            }
         }
         return $this->oauth;
     }
@@ -761,7 +750,7 @@ class repository_evernote extends repository {
      * @return array of option names
      */
     public static function get_type_option_names() {
-        $options = array('key', 'secret', 'sslcompatibilitymode');
+        $options = array('key', 'secret');
         return array_merge(parent::get_type_option_names(), $options);
     }
 
@@ -867,17 +856,13 @@ class repository_evernote extends repository {
         parent::type_config_form($mform, $classname);
         $key    = get_config('evernote', 'key') || '';
         $secret = get_config('evernote', 'secret') || '';
-        $sslcompatibilitymode  = get_config('evernote', 'sslcompatibilitymode') || 0;
 
         $mform->addElement('text', 'key', get_string('key', 'repository_evernote'),
                 array('value' => $key, 'size' => '40'));
+        $mform->setType('key', PARAM_RAW);
         $mform->addElement('text', 'secret', get_string('secret', 'repository_evernote'),
                 array('value' => $secret, 'size' => '40'));
-        $mform->addElement('checkbox', 'sslcompatibilitymode',
-                get_string('sslcompatibilitymode', 'repository_evernote'));
-        $mform->setDefault('sslcompatibilitymode', $sslcompatibilitymode);
-        $mform->addElement('static', 'sslcompatibilitymodehelp', '',
-                get_string('sslcompatibilitymode_help', 'repository_evernote'));
+        $mform->setType('secret', PARAM_RAW);
 
         $strrequired = get_string('required');
         $mform->addRule('key', $strrequired, 'required', null, 'client');
