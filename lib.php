@@ -28,7 +28,6 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
 require_once($CFG->libdir . '/oauthlib.php');
-require_once($CFG->libdir . '/textlib.class.php');
 require_once(dirname(__FILE__) . '/lib/evernote/lib/Thrift.php');
 require_once(dirname(__FILE__) . '/lib/evernote/lib/transport/THttpClient.php');
 require_once(dirname(__FILE__) . '/lib/evernote/lib/protocol/TBinaryProtocol.php');
