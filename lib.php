@@ -48,11 +48,16 @@ if (!class_exists('\EDAM\NoteStore\NoteStoreClient')) {
 if (!class_exists('\EDAM\Types\NoteSortOrder')) {
     require_once($GLOBALS['THRIFT_ROOT'] . '/packages/Types/Types_types.php');
 }
+if (!class_exists('\EDAM\Error\EDAMUserException')) {
+    require_once($GLOBALS['THRIFT_ROOT'] . '/packages/Errors/Errors_types.php');
+}
 
 use EDAM\NoteStore\NoteStoreClient;
 use EDAM\NoteStore\NoteFilter;
 use EDAM\NoteStore\NotesMetadataResultSpec;
 use EDAM\Types\NoteSortOrder;
+use EDAM\Error\EDAMErrorCode;
+use EDAM\Error\EDAMUserException;
 
 /**
  * Repository class to access Evernote files.
@@ -537,7 +542,14 @@ class repository_evernote extends repository {
             'includeCreated' => true,
             'includeUpdated' => true
         ));
-        return $this->get_notestore()->findNotesMetadata($this->accesstoken, $filter, $offset, $limit, $resultspec);
+        try {
+            $result = $this->get_notestore()->findNotesMetadata($this->accesstoken, $filter, $offset, $limit, $resultspec);
+        } catch (EDAMUserException $e) {
+            if ($e->errorCode === EDAMErrorCode::PERMISSION_DENIED) {
+                throw new repository_exception('nopermissiontoaccessnotes', 'repository_evernote');
+            }
+        }
+        return $result;
     }
 
     /**

@@ -29,6 +29,7 @@ $string['configplugin'] = 'Evernote configuration';
 $string['evernote'] = 'Evernote';
 $string['evernote:view'] = 'View Evernote repository';
 $string['key'] = 'Consumer key';
+$string['nopermissiontoaccessnotes'] = 'No permission to access your notes, please make sure that you requested a \'Full access\' API key.';
 $string['notebooks'] = 'Notebooks';
 $string['pluginname'] = 'Evernote';
 $string['pluginname_help'] = 'Repository on Evernote';
