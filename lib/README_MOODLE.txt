@@ -1,7 +1,7 @@
 Evernote SDK for PHP
 ====================
 
-Version:            1.22
-Downloaded:         24/09/2012
+Version:            1.25.0
+Downloaded:         06 Sep 2013
 Downloaded from:    https://github.com/evernote/evernote-sdk-php
-Last commit:        60368c15039bf9a8e022db344a4e3bbc8f4d0571
+Last commit:        a0aa139ec81af610d314be1b70bee74947401790

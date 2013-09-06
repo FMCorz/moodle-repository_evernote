@@ -36,6 +36,8 @@ $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_EMAIL_DOMAIN_REGEX'] = "^[A-Za-z0
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_EMAIL_REGEX'] = "^[A-Za-z0-9!#\$%&'*+/=?^_`{|}~-]+(\\.[A-Za-z0-9!#\$%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.([A-Za-z]{2,})\$";
 
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_VAT_REGEX'] = "^((AT)?U[0-9]{8}|(BE)?0?[0-9]{9}|(BG)?[0-9]{9,10}|(CY)?[0-9]{8}L|(CZ)?[0-9]{8,10}|(DE)?[0-9]{9}|(DK)?[0-9]{8}|(EE)?[0-9]{9}|(EL|GR)?[0-9]{9}|(ES)?[0-9A-Z][0-9]{7}[0-9A-Z]|(FI)?[0-9]{8}|(FR)?[0-9A-Z]{2}[0-9]{9}|(GB)?([0-9]{9}([0-9]{3})?|[A-Z]{2}[0-9]{3})|(HU)?[0-9]{8}|(IE)?[0-9]S[0-9]{5}L|(IT)?[0-9]{11}|(LT)?([0-9]{9}|[0-9]{12})|(LU)?[0-9]{8}|(LV)?[0-9]{11}|(MT)?[0-9]{8}|(NL)?[0-9]{9}B[0-9]{2}|(PL)?[0-9]{10}|(PT)?[0-9]{9}|(RO)?[0-9]{2,10}|(SE)?[0-9]{12}|(SI)?[0-9]{8}|(SK)?[0-9]{10})|[0-9]{9}MVA|[0-9]{6}|CHE[0-9]{9}(TVA|MWST|IVA)\$";
+
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_TIMEZONE_LEN_MIN'] = 1;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_TIMEZONE_LEN_MAX'] = 32;
@@ -60,6 +62,10 @@ $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_MIME_TYPE_MP3'] = "audio/mpeg";
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_MIME_TYPE_AMR'] = "audio/amr";
 
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_MIME_TYPE_AAC'] = "audio/aac";
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_MIME_TYPE_M4A'] = "audio/mp4";
+
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_MIME_TYPE_MP4_VIDEO'] = "video/mp4";
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_MIME_TYPE_INK'] = "application/vnd.evernote.ink";
@@ -78,23 +84,27 @@ $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_MIME_TYPES'] = array(
   "application/vnd.evernote.ink" => true,
   "application/pdf" => true,
   "video/mp4" => true,
+  "audio/aac" => true,
+  "audio/mp4" => true,
 );
 
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_COMMERCE_SERVICE_GOOGLE'] = "Google";
-
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_COMMERCE_SERVICE_PAYPAL'] = "Paypal";
-
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_COMMERCE_SERVICE_GIFT'] = "Gift";
-
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_COMMERCE_SERVICE_TRIALPAY'] = "TrialPay";
-
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_COMMERCE_SERVICE_TRIAL'] = "Trial";
-
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_COMMERCE_SERVICE_GROUP'] = "Group";
-
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_COMMERCE_SERVICE_CYBERSOURCE'] = "CYBERSRC";
-
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_COMMERCE_DEFAULT_CURRENCY_COUNTRY_CODE'] = "USD";
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_INDEXABLE_RESOURCE_MIME_TYPES'] = array(
+  "application/msword" => true,
+  "application/mspowerpoint" => true,
+  "application/excel" => true,
+  "application/vnd.ms-word" => true,
+  "application/vnd.ms-powerpoint" => true,
+  "application/vnd.ms-excel" => true,
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => true,
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation" => true,
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => true,
+  "application/vnd.apple.pages" => true,
+  "application/vnd.apple.numbers" => true,
+  "application/vnd.apple.keynote" => true,
+  "application/x-iwork-pages-sffpages" => true,
+  "application/x-iwork-numbers-sffnumbers" => true,
+  "application/x-iwork-keynote-sffkey" => true,
+);
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_SEARCH_QUERY_LEN_MIN'] = 0;
 
@@ -186,17 +196,25 @@ $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_PASSWORD_LEN_MAX'] = 64;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_PASSWORD_REGEX'] = "^[A-Za-z0-9!#\$%&'()*+,./:;<=>?@^_`{|}~\\[\\]\\\\-]{6,64}\$";
 
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_BUSINESS_URI_LEN_MAX'] = 32;
+
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_NOTE_TAGS_MAX'] = 100;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_NOTE_RESOURCES_MAX'] = 1000;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_TAGS_MAX'] = 100000;
 
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_BUSINESS_TAGS_MAX'] = 100000;
+
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_SAVED_SEARCHES_MAX'] = 100;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_NOTES_MAX'] = 100000;
 
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_BUSINESS_NOTES_MAX'] = 500000;
+
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_NOTEBOOKS_MAX'] = 250;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_BUSINESS_NOTEBOOKS_MAX'] = 5000;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_RECENT_MAILED_ADDRESSES_MAX'] = 10;
 
@@ -208,15 +226,19 @@ $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_UPLOAD_LIMIT_FREE'] = 629145
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_UPLOAD_LIMIT_PREMIUM'] = 1073741824;
 
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_UPLOAD_LIMIT_BUSINESS'] = 2147483647;
+
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_NOTE_SIZE_MAX_FREE'] = 26214400;
 
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_NOTE_SIZE_MAX_PREMIUM'] = 52428800;
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_NOTE_SIZE_MAX_PREMIUM'] = 104857600;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_RESOURCE_SIZE_MAX_FREE'] = 26214400;
 
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_RESOURCE_SIZE_MAX_PREMIUM'] = 52428800;
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_RESOURCE_SIZE_MAX_PREMIUM'] = 104857600;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_LINKED_NOTEBOOK_MAX'] = 100;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_USER_LINKED_NOTEBOOK_MAX_PREMIUM'] = 250;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_NOTEBOOK_SHARED_NOTEBOOK_MAX'] = 250;
 
@@ -224,11 +246,11 @@ $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_NOTE_CONTENT_CLASS_LEN_MIN'] = 3;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_NOTE_CONTENT_CLASS_LEN_MAX'] = 32;
 
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_NOTE_CONTENT_CLASS_REGEX'] = "^[A-Za-z0-9_.-]{3,32}\$";
+
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_HELLO_APP_CONTENT_CLASS_PREFIX'] = "evernote.hello.";
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_FOOD_APP_CONTENT_CLASS_PREFIX'] = "evernote.food.";
-
-$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_NOTE_CONTENT_CLASS_REGEX'] = "^[A-Za-z0-9_.-]{3,32}\$";
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_CONTENT_CLASS_HELLO_ENCOUNTER'] = "evernote.hello.encounter";
 
@@ -236,7 +258,15 @@ $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_CONTENT_CLASS_HELLO_PROFILE'] = "
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_CONTENT_CLASS_FOOD_MEAL'] = "evernote.food.meal";
 
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_CONTENT_CLASS_SKITCH_PREFIX'] = "evernote.skitch";
+
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_CONTENT_CLASS_SKITCH'] = "evernote.skitch";
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_CONTENT_CLASS_SKITCH_PDF'] = "evernote.skitch.pdf";
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_CONTENT_CLASS_PENULTIMATE_PREFIX'] = "evernote.penultimate.";
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_CONTENT_CLASS_PENULTIMATE_NOTEBOOK'] = "evernote.penultimate.notebook";
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_RELATED_PLAINTEXT_LEN_MIN'] = 1;
 
@@ -247,5 +277,47 @@ $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_RELATED_MAX_NOTES'] = 25;
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_RELATED_MAX_NOTEBOOKS'] = 1;
 
 $GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_RELATED_MAX_TAGS'] = 25;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_BUSINESS_NOTEBOOK_DESCRIPTION_LEN_MIN'] = 1;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_BUSINESS_NOTEBOOK_DESCRIPTION_LEN_MAX'] = 200;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_BUSINESS_NOTEBOOK_DESCRIPTION_REGEX'] = "^[^\\p{Cc}\\p{Z}]([^\\p{Cc}\\p{Zl}\\p{Zp}]{0,198}[^\\p{Cc}\\p{Z}])?\$";
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_BUSINESS_PHONE_NUMBER_LEN_MAX'] = 20;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_PREFERENCE_NAME_LEN_MIN'] = 3;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_PREFERENCE_NAME_LEN_MAX'] = 32;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_PREFERENCE_VALUE_LEN_MIN'] = 1;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_PREFERENCE_VALUE_LEN_MAX'] = 1024;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_MAX_PREFERENCES'] = 100;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_MAX_VALUES_PER_PREFERENCE'] = 256;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_PREFERENCE_NAME_REGEX'] = "^[A-Za-z0-9_.-]{3,32}\$";
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_PREFERENCE_VALUE_REGEX'] = "^[^\\p{Cc}]{1,1024}\$";
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_PREFERENCE_SHORTCUTS'] = "evernote.shortcuts";
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_PREFERENCE_SHORTCUTS_MAX_VALUES'] = 250;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_DEVICE_ID_LEN_MAX'] = 32;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_DEVICE_ID_REGEX'] = "^[^\\p{Cc}]{1,32}\$";
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_DEVICE_DESCRIPTION_LEN_MAX'] = 64;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_DEVICE_DESCRIPTION_REGEX'] = "^[^\\p{Cc}]{1,64}\$";
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_SEARCH_SUGGESTIONS_MAX'] = 10;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_SEARCH_SUGGESTIONS_PREFIX_LEN_MAX'] = 1024;
+
+$GLOBALS['EDAM_Limits_Limits_CONSTANTS']['EDAM_SEARCH_SUGGESTIONS_PREFIX_LEN_MIN'] = 2;
 
 ?>
