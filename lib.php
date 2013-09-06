@@ -28,11 +28,27 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/repository/lib.php');
 require_once($CFG->libdir . '/oauthlib.php');
-require_once(dirname(__FILE__) . '/lib/evernote/lib/Thrift.php');
-require_once(dirname(__FILE__) . '/lib/evernote/lib/transport/THttpClient.php');
-require_once(dirname(__FILE__) . '/lib/evernote/lib/protocol/TBinaryProtocol.php');
-require_once(dirname(__FILE__) . '/lib/evernote/lib/packages/NoteStore/NoteStore.php');
-require_once(dirname(__FILE__) . '/lib/evernote/lib/packages/Types/Types_types.php');
+
+// Allow for co-existence with another plugin using Evernote API.
+if (!isset($GLOBALS['THRIFT_ROOT'])) {
+    $GLOBALS['THRIFT_ROOT'] = __DIR__ . '/lib/evernote/lib';
+}
+if (!class_exists('TException')) {
+    require_once($GLOBALS['THRIFT_ROOT'] . '/Thrift.php');
+}
+if (!class_exists('THttpClient')) {
+    require_once($GLOBALS['THRIFT_ROOT'] . '/transport/THttpClient.php');
+}
+if (!class_exists('TBinaryProtocol')) {
+    require_once($GLOBALS['THRIFT_ROOT'] . '/protocol/TBinaryProtocol.php');
+}
+if (!class_exists('\EDAM\NoteStore\NoteStoreClient')) {
+    require_once($GLOBALS['THRIFT_ROOT'] . '/packages/NoteStore/NoteStore.php');
+}
+if (!class_exists('\EDAM\Types\NoteSortOrder')) {
+    require_once($GLOBALS['THRIFT_ROOT'] . '/packages/Types/Types_types.php');
+}
+
 use EDAM\NoteStore\NoteStoreClient;
 use EDAM\NoteStore\NoteFilter;
 use EDAM\NoteStore\NotesMetadataResultSpec;
