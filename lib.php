@@ -787,8 +787,11 @@ class repository_evernote extends repository {
      * @return array|string information/content of the login form
      */
     public function print_login() {
-        // TODO: Handle errors with exception when request_token fails, but first we need to improve request_token.
-        $result = $this->get_oauth()->request_token();
+        try {
+            $result = $this->get_oauth()->request_token();
+        } catch (Exception $e) {
+            throw new repository_exception('requesttokenerror', 'repository_evernote');
+        }
         set_user_preference($this->settingprefix.'tokensecret', $result['oauth_token_secret']);
         $url = $result['authorize_url'];
         if ($this->options['ajax']) {
