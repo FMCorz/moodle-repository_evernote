@@ -26,18 +26,23 @@ The search field supports the advanced search syntax common to Evernote applicat
 Install
 -------
 
-- Request an API key from [Evernote Developers](http://dev.evernote.com/documentation/cloud/) and activate the key on their production services (step 1 and 4).
+- Request a 'Full access' API key from [Evernote Developers](http://dev.evernote.com/doc/) and activate the key on their production servers (see menu Resources > Activate an API key).
 - Copy the content of this repository in repository/evernote.
 - Go to your admin notifications page to install the plugin.
 - Navigate to Settings > Site administration > Plugins > Repositories to enable it.
 - Enter your consumer key and secret in the settings page.
+
+Note: The 'Full access' is required to read the content of your notes.
 
 Todo
 ----
 
 - Support for file references.
 - Enable paging (blocked by MDL-35664).
-- Investigate backward compatibility for Moodle 2.2.
+- Get the content of the note as a PDF.
+- Being able to pick a note's URL property.
+- Picking the public URL to a note.
+- Caching the requests for faster loading.
 
 License
 -------
