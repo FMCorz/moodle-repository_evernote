@@ -80,6 +80,12 @@ class repository_evernote extends repository {
     const API_DEV = 'https://sandbox.evernote.com';
 
     /**
+     * Prefix for the user preferences.
+     * @var string
+     */
+    const SETTINGPREFIX = 'repository_evernote_';
+
+    /**
      * URL to the API.
      * @var string
      */
@@ -144,6 +150,7 @@ class repository_evernote extends repository {
     /**
      * Prefix for the user preferences.
      * @var string
+     * @deprecated since 1.1.0
      */
     protected $settingprefix = 'evernote_';
 
@@ -181,8 +188,8 @@ class repository_evernote extends repository {
     function __construct($repositoryid, $context = SYSCONTEXTID, $options = array(), $readonly = 0) {
         parent::__construct($repositoryid, $context, $options, $readonly);
 
-        $this->accesstoken = get_user_preferences($this->settingprefix.'accesstoken', null);
-        $this->notestoreurl = get_user_preferences($this->settingprefix.'notestoreurl', null);
+        $this->accesstoken = get_user_preferences(self::SETTINGPREFIX.'accesstoken', null);
+        $this->notestoreurl = get_user_preferences(self::SETTINGPREFIX.'notestoreurl', null);
     }
 
     /**
@@ -468,14 +475,14 @@ class repository_evernote extends repository {
     public function callback() {
         $token  = optional_param('oauth_token', '', PARAM_TEXT);
         $verifier  = optional_param('oauth_verifier', '', PARAM_TEXT);
-        $secret = get_user_preferences($this->settingprefix.'tokensecret', '');
+        $secret = get_user_preferences(self::SETTINGPREFIX.'tokensecret', '');
         $access = $this->get_oauth()->get_access_token($token, $secret, $verifier);
         $notestore  = $access['edam_noteStoreUrl'];
         $userid  = $access['edam_userId'];
         $accesstoken  = $access['oauth_token'];
-        set_user_preference($this->settingprefix.'accesstoken', $accesstoken);
-        set_user_preference($this->settingprefix.'notestoreurl', $notestore);
-        set_user_preference($this->settingprefix.'userid', $userid);
+        set_user_preference(self::SETTINGPREFIX.'accesstoken', $accesstoken);
+        set_user_preference(self::SETTINGPREFIX.'notestoreurl', $notestore);
+        set_user_preference(self::SETTINGPREFIX.'userid', $userid);
     }
 
     /**
@@ -789,9 +796,9 @@ class repository_evernote extends repository {
      * @return string from {@link evernote_repository::print_login()}
      */
     public function logout() {
-        set_user_preference($this->settingprefix.'accesstoken', '');
-        set_user_preference($this->settingprefix.'notestoreurl', '');
-        set_user_preference($this->settingprefix.'userid', '');
+        set_user_preference(self::SETTINGPREFIX.'accesstoken', '');
+        set_user_preference(self::SETTINGPREFIX.'notestoreurl', '');
+        set_user_preference(self::SETTINGPREFIX.'userid', '');
         $this->accesstoken = '';
         $this->notestore = null;
         return $this->print_login();
@@ -808,7 +815,7 @@ class repository_evernote extends repository {
         } catch (Exception $e) {
             throw new repository_exception('requesttokenerror', 'repository_evernote');
         }
-        set_user_preference($this->settingprefix.'tokensecret', $result['oauth_token_secret']);
+        set_user_preference(self::SETTINGPREFIX.'tokensecret', $result['oauth_token_secret']);
         $url = $result['authorize_url'];
         if ($this->options['ajax']) {
             $ret = array();

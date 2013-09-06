@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,18 +15,33 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details.
+ * Upgrade logic.
  *
- * @package    repository
- * @subpackage evernote
- * @copyright  2012 Frédéric Massart
+ * @package    repository_evernote
+ * @copyright  2013 Frédéric Massart
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2013090600;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2012062502;        // Requires this Moodle version
-$plugin->maturity  = MATURITY_STABLE;   // Maturity of the plugin
-$plugin->release   = '1.1.0';           // Release name
-$plugin->component = 'repository_evernote'; // Full name of the plugin (used for diagnostics)
+function xmldb_repository_evernote_upgrade($oldversion = 0) {
+    global $DB;
+
+    if ($oldversion < 2013090600) {
+
+        // Migrating the user preferences using new prefix.
+        $configs = array('tokensecret', 'accesstoken', 'notestoreurl', 'userid');
+        foreach ($configs as $config) {
+            try {
+                $DB->set_field('user_preferences', 'name', 'repository_evernote_' . $config,
+                    array('name' => 'evernote_' . $config));
+            } catch (dmlwriteexception $e) {
+                // Nicely catching the exception.
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2013090600, 'repository', 'evernote');
+    }
+
+    return true;
+}
