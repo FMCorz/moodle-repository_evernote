@@ -35,3 +35,5 @@ $string['pluginname_help'] = 'Repository on Evernote';
 $string['savedsearchs'] = 'Saved searchs';
 $string['secret'] = 'Consumer secret';
 $string['tags'] = 'Tags';
+$string['usedevapi'] = 'Use testing server';
+$string['usedevapi_info'] = 'If you have just <a href="http://dev.evernote.com/">requested a key</a> from Evernote, it will require some time before it is available on their production servers. Therefore you can enable this option and create an account <a href="https://sandbox.evernote.com">here</a> to test the plugin.';

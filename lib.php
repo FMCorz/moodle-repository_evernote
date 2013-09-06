@@ -52,12 +52,22 @@ use EDAM\Types\NoteSortOrder;
 class repository_evernote extends repository {
 
     /**
-     * URL to the API.
-     * Production services: https://www.evernote.com
-     * Development services: https://sandbox.evernote.com
+     * URL to the API production services.
      * @var string
      */
-    protected $api = 'https://www.evernote.com';
+    const API_PROD = 'https://www.evernote.com';
+
+    /**
+     * URL to the API development services.
+     * @var string
+     */
+    const API_DEV = 'https://sandbox.evernote.com';
+
+    /**
+     * URL to the API.
+     * @var string
+     */
+    protected $api = self::API_PROD;
 
     /**
      * URL to the Web access of Evernote.
@@ -731,6 +741,10 @@ class repository_evernote extends repository {
                 'repo_id' => $this->id
             ));
 
+            if (!empty($config->usedevapi)) {
+                $this->api = self::API_DEV;
+            }
+
             $args['oauth_consumer_key'] = $config->key;
             $args['oauth_consumer_secret'] = $config->secret;
             $args['oauth_callback'] = $callbackurl->out(false);
@@ -749,7 +763,7 @@ class repository_evernote extends repository {
      * @return array of option names
      */
     public static function get_type_option_names() {
-        $options = array('key', 'secret');
+        $options = array('key', 'secret', 'usedevapi');
         return array_merge(parent::get_type_option_names(), $options);
     }
 
@@ -853,15 +867,13 @@ class repository_evernote extends repository {
      */
     public static function type_config_form($mform, $classname = 'repository') {
         parent::type_config_form($mform, $classname);
-        $key    = get_config('evernote', 'key') || '';
-        $secret = get_config('evernote', 'secret') || '';
 
-        $mform->addElement('text', 'key', get_string('key', 'repository_evernote'),
-                array('value' => $key, 'size' => '40'));
+        $mform->addElement('text', 'key', get_string('key', 'repository_evernote'), array('size' => '40'));
         $mform->setType('key', PARAM_RAW);
-        $mform->addElement('text', 'secret', get_string('secret', 'repository_evernote'),
-                array('value' => $secret, 'size' => '40'));
+        $mform->addElement('text', 'secret', get_string('secret', 'repository_evernote'), array('size' => '40'));
         $mform->setType('secret', PARAM_RAW);
+        $mform->addElement('selectyesno', 'usedevapi', get_string('usedevapi', 'repository_evernote'), 0);
+        $mform->addElement('static', '', '', get_string('usedevapi_info', 'repository_evernote'));
 
         $strrequired = get_string('required');
         $mform->addRule('key', $strrequired, 'required', null, 'client');
