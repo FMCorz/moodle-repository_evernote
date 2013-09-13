@@ -135,6 +135,12 @@ class repository_evernote extends repository {
     protected $enablepaging = false;
 
     /**
+     * To limit the query to notes with attachments only. This does not affect the search.
+     * @var boolean
+     */
+    protected $noteswithattachmentsonly = true;
+
+    /**
      * Maximum results of a search query. Must respect EDAM_USER_NOTES_MAX.
      * @var int
      */
@@ -536,6 +542,9 @@ class repository_evernote extends repository {
         if ($filter->order == null) {
             $filter->order = NoteSortOrder::TITLE;
             $filter->ascending = true;
+        }
+        if ($this->noteswithattachmentsonly && $filter->words == null) {
+            $filter->words = 'resource:*';
         }
         $resultspec = new NotesMetaDataResultSpec(array(
             'includeTitle' => true,
