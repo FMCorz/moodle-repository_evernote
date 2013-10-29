@@ -48,6 +48,9 @@ if (!class_exists('\EDAM\NoteStore\NoteStoreClient')) {
 if (!class_exists('\EDAM\Types\NoteSortOrder')) {
     require_once($GLOBALS['THRIFT_ROOT'] . '/packages/Types/Types_types.php');
 }
+if (!class_exists('\EDAM\UserStore\UserStoreClient')) {
+    require_once($GLOBALS['THRIFT_ROOT'] . '/packages/UserStore/UserStore.php');
+}
 if (!class_exists('\EDAM\Error\EDAMUserException')) {
     require_once($GLOBALS['THRIFT_ROOT'] . '/packages/Errors/Errors_types.php');
 }
@@ -55,6 +58,7 @@ if (!class_exists('\EDAM\Error\EDAMUserException')) {
 use EDAM\NoteStore\NoteStoreClient;
 use EDAM\NoteStore\NoteFilter;
 use EDAM\NoteStore\NotesMetadataResultSpec;
+use EDAM\UserStore\UserStoreClient;
 use EDAM\Types\NoteSortOrder;
 use EDAM\Error\EDAMErrorCode;
 use EDAM\Error\EDAMUserException;
@@ -94,7 +98,7 @@ class repository_evernote extends repository {
      * URL to the API.
      * @var string
      */
-    protected $api = self::API_PROD;
+    protected $api;
 
     /**
      * URL to the Web access of Evernote.
@@ -175,6 +179,12 @@ class repository_evernote extends repository {
      * @var NoteStoreClient
      */
     protected $notestore;
+
+    /**
+     * Cache for the UserStoreClient object.
+     * @var UserStoreClient
+     */
+    protected $userstore;
 
     /**
      * Cache for the oauth_helper object.
@@ -327,11 +337,12 @@ class repository_evernote extends repository {
                 'datemodified' => $note->updated / 1000,
                 'datecreated' => $note->created / 1000,
                 'size' => $resource->data->size,
-                'source' => 'resource:' . $resource->guid,
+                'source' => 'resource:' . $resource->guid . '|note:' . $note->guid,
                 'thumbnail' => $OUTPUT->pix_url(file_extension_icon($resource->attributes->fileName, 64))->out(false),
                 'thumbnail_height' => 64,
                 'thumbnail_width' => 64,
             );
+            // TODO use core_collator.
             collatorlib::ksort($resources);
         }
         // Get rid of the keys as file picker does not support them.
@@ -553,6 +564,22 @@ class repository_evernote extends repository {
     }
 
     /**
+     * Return the API URL.
+     *
+     * @return string
+     */
+    protected function get_api_url() {
+        if (empty($this->api)) {
+            $this->api = self::API_PROD;
+            $usedevapi = get_config('evernote', 'usedevapi');
+            if (!empty($usedevapi)) {
+                $this->api = self::API_DEV;
+            }
+        }
+        return $this->api;
+    }
+
+    /**
      * Downloads the file to Moodle.
      *
      * @param mixed $reference to the file, {@link repository_evernote::get_file_reference()}
@@ -586,20 +613,72 @@ class repository_evernote extends repository {
     }
 
     /**
-     * Receive a source when a user picks a file and transforms it to a final reference.
+     * Called when synchronizing the file.
      *
-     * See repository_ajax.php when action is download.
+     * @param string $reference Serialized reference.
+     * @return array containing the filesize.
+     */
+    public function get_file_by_reference($reference) {
+        $ref = @unserialize($reference->reference);
+        try {
+            $c = new curl();
+            $result = $c->head($ref->url);
+            $curlinfo = $c->get_info();
+            $return = array('filepath' => $ref->url);
+            if (isset($curlinfo['http_code']) && $curlinfo['http_code'] == 200
+                    && isset($curlinfo['download_content_length'])
+                    && $curlinfo['download_content_length'] >= 0) {
+                $return['filesize'] = $curlinfo['download_content_length'];
+            }
+            return (object) $return;
+        } catch (Exception $e) {
+            throw $e;
+        }
+        return null;
+    }
+
+    /**
+     * Prepares the file for being a reference.
      *
-     * @param string $source returned by the file picker
-     * @return string $reference to the file
+     * Shares the note to get a direct link to the attachment.
+     *
+     * @param string $source source of the file.
+     * @return string $reference serialized reference file.
      */
     public function get_file_reference($source) {
         global $USER;
-        $reference = new stdClass();
-        $reference->source = $source;
-        $reference->userid = $USER->id;
-        $reference->username = fullname($USER);
-        return serialize($reference);
+        if (strpos($source, 'resource:') === 0) {
+            list($resource, $note) = explode('|', $source, 2);
+            list($lost, $guid) = explode(':', $resource, 2);
+            list($lost, $noteid) = explode(':', $note, 2);
+            try {
+                $user = $this->get_userstore()->getUser($this->accesstoken);
+                $usershareid = $user->shardId;
+                $sharekey = $this->get_notestore()->shareNote($this->accesstoken, $noteid);
+                $url = $this->get_api_url() . '/shard/' . $usershareid . '/sh/' . $noteid . '/' . $sharekey . '/res/' . $guid;
+
+                $reference = new stdClass();
+                $reference->url = $url;
+                $reference->source = $source;
+                $reference->userid = $USER->id;
+                $reference->username = fullname($USER);
+
+                return serialize($reference);
+            } catch (Exception $e) {
+            }
+        }
+        throw new coding_exception('Error while sharing the get a reference');
+    }
+
+    /**
+     * Return information about the source of the reference.
+     *
+     * @param string $source
+     * @return string
+     */
+    public function get_file_source_info($source) {
+        global $USER;
+        return 'Evernote (' . fullname($USER) . '): ' . $source;
     }
 
     /**
@@ -776,20 +855,34 @@ class repository_evernote extends repository {
                 'repo_id' => $this->id
             ));
 
-            if (!empty($config->usedevapi)) {
-                $this->api = self::API_DEV;
-            }
-
             $args['oauth_consumer_key'] = $config->key;
             $args['oauth_consumer_secret'] = $config->secret;
             $args['oauth_callback'] = $callbackurl->out(false);
-            $args['api_root'] = $this->api;
-            $args['request_token_api'] = $this->api . '/oauth';
-            $args['access_token_api'] = $this->api . '/oauth';
-            $args['authorize_url'] = $this->api . '/OAuth.action';
+            $args['api_root'] = $this->get_api_url();
+            $args['request_token_api'] = $this->get_api_url() . '/oauth';
+            $args['access_token_api'] = $this->get_api_url() . '/oauth';
+            $args['authorize_url'] = $this->get_api_url() . '/OAuth.action';
             $this->oauth = new oauth_helper($args);
         }
         return $this->oauth;
+    }
+
+    /**
+     * Get the references details (human readable).
+     *
+     * @param string $reference serialised reference.
+     * @param integer $filestatus file status.
+     * @return string
+     */
+    public function get_reference_details($reference, $filestatus = 0) {
+        // Not using === on purpose.
+        if ($filestatus == 0) {
+            $ref = unserialize($reference);
+            $a = (object) array('name' => $this->get_name(), 'fullname' => $ref->username);
+            return get_string('referencedetails', 'repository_evernote', $a);
+        } else {
+            return get_string('lostsource', 'repository', '');
+        }
     }
 
     /**
@@ -800,6 +893,28 @@ class repository_evernote extends repository {
     public static function get_type_option_names() {
         $options = array('key', 'secret', 'usedevapi');
         return array_merge(parent::get_type_option_names(), $options);
+    }
+
+    /**
+     * Return the User Store
+     *
+     * @return UserStoreClient object
+     */
+    protected function get_userstore() {
+        if (empty($this->userstore)) {
+            $parts = parse_url($this->get_api_url() . '/edam/user');
+            if (!isset($parts['port'])) {
+                if ($parts['scheme'] === 'https') {
+                    $parts['port'] = 443;
+                } else {
+                    $parts['port'] = 80;
+                }
+            }
+            $userstorehttpclient = new THttpClient($parts['host'], $parts['port'], $parts['path'], $parts['scheme']);
+            $userstoreprotocol = new TBinaryProtocol($userstorehttpclient);
+            $this->userstore = new UserStoreClient($userstoreprotocol, $userstoreprotocol);
+        }
+        return $this->userstore;
     }
 
     /**
@@ -888,12 +1003,26 @@ class repository_evernote extends repository {
     }
 
     /**
+     * Repository method to serve the referenced file.
+     *
+     * @param stored_file $storedfile the file that contains the reference
+     * @param int $lifetime Number of seconds before the file should expire from caches (default 24 hours)
+     * @param int $filter 0 (default)=no filtering, 1=all files, 2=html files only
+     * @param bool $forcedownload If true (default false), forces download of file rather than view in browser/plugin
+     * @param array $options additional options affecting the file serving
+     */
+    public function send_file($storedfile, $lifetime = 86400, $filter = 0, $forcedownload = false, array $options = null) {
+        $ref = unserialize($storedfile->get_reference());
+        header('Location: ' . $ref->url);
+        die();
+    }
+    /**
      * Type of files supported.
      *
      * @return int of file supported mask.
      */
     public function supported_returntypes() {
-        return FILE_INTERNAL;
+        return FILE_INTERNAL | FILE_REFERENCE;
     }
 
     /**
