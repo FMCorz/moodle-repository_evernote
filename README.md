@@ -42,7 +42,6 @@ Todo
 - Get the content of the note as a PDF.
 - Being able to pick a note's URL property.
 - Picking the public URL to a note.
-- Caching the requests for faster loading.
 
 License
 -------

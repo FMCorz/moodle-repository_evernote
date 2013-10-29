@@ -193,6 +193,12 @@ class repository_evernote extends repository {
     protected $oauth;
 
     /**
+     * The requests cache store.
+     * @var cache_session
+     */
+    protected $cachestore;
+
+    /**
      * Constructor
      *
      * @param int $repositoryid repository instance id
@@ -483,6 +489,60 @@ class repository_evernote extends repository {
     }
 
     /**
+     * Interface to read the cache.
+     *
+     * This is to preserve compatibility with version prior to Moodle 2.4.
+     *
+     * @param string $path
+     * @return void
+     */
+    protected function cache_get($path) {
+        global $CFG;
+        // Cache is a feature only available from 2.4.
+        if ($CFG->version < 2012120300) {
+            return false;
+        }
+        if (!$this->cachestore) {
+            require_once($CFG->dirroot . '/cache/classes/loaders.php');
+            $this->cachestore = cache::make('repository_evernote', 'requests');
+        }
+        return $this->cachestore->get($path);
+    }
+
+    /**
+     * Interface to purge the cache.
+     *
+     * This is to preserve compatibility with version prior to Moodle 2.4.
+     *
+     * @param string $path
+     * @return void
+     */
+    protected function cache_purge() {
+        $this->cache_get('Please create the cache object...');
+        if (!$this->cachestore) {
+            return;
+        }
+        // This purge doesn't seem to work, this could be a bug in the cache API.
+        $this->cachestore->purge();
+    }
+
+    /**
+     * Interface to write to the cache.
+     *
+     * This is to preserve compatibility with version prior to Moodle 2.4.
+     *
+     * @param string $path
+     * @param mixed $data
+     * @return void
+     */
+    protected function cache_set($path, $data) {
+        if (!$this->cachestore) {
+            return;
+        }
+        $this->cachestore->set($path, $data);
+    }
+
+    /**
      * Function called during the OAuth process as the callback URL.
      *
      * @return void
@@ -712,92 +772,106 @@ class repository_evernote extends repository {
         $uri = array_pop($trail);
         list($mode, $guid, $name) = $this->explode_node_path($uri);
 
-        // Build the path to get to what we are browsing.
-        $rootpath = '';
-        if (!empty($trail)) {
-            $rootpath = implode('/', $trail);
+        // Try to get the result from the cache.
+        $cachekey = $uri . '@' . $page;
+        if (($fromcache = $this->cache_get($cachekey)) !== false) {
+            $files = $fromcache['files'];
+            $folders = $fromcache['folders'];
+        } else {
+            // Build the path to get to what we are browsing.
+            $rootpath = '';
+            if (!empty($trail)) {
+                $rootpath = implode('/', $trail);
+            }
+
+            switch ($mode) {
+                // Display all the notes.
+                case 'all':
+                    $filter = new NoteFilter();
+                    $notesmetadatalist = $this->find_notes_metadata($filter, $offset, $this->itemsperpage);
+                    $pages = ceil($notesmetadatalist->totalNotes / $this->itemsperpage);
+                    $folders = $this->build_notes_list($notesmetadatalist->notes, $path);
+                    break;
+                // Display the tags, or notes in the tags.
+                case 'tags':
+                    if (empty($guid)) {
+                        $tags = $this->get_notestore()->listTags($this->accesstoken);
+                        $folders = $this->build_tags_list($tags, $rootpath);
+                    } else {
+                        $filter = new NoteFilter(array('tagGuids' => array($guid)));
+                        $notesmetadatalist = $this->find_notes_metadata($filter, $offset, $this->itemsperpage);
+                        $pages = ceil($notesmetadatalist->totalNotes / $this->itemsperpage);
+                        $folders = $this->build_notes_list($notesmetadatalist->notes, $path);
+                    }
+                    break;
+                // Display the notebooks and stacks.
+                case 'notebooks':
+                    $notebooks = $this->get_notestore()->listNotebooks($this->accesstoken);
+                    $folders = $this->build_notebooks_list($notebooks, $path);
+                    break;
+                // Display notebooks within a stack.
+                case 'stack':
+                    $notebooks = $this->get_notestore()->listNotebooks($this->accesstoken);
+                    $folders = $this->build_notebooks_list($notebooks, $path, $guid);
+                    break;
+                // Display the notes in a notebook.
+                case 'notebook':
+                    $filter = new NoteFilter(array('notebookGuid' => $guid));
+                    $notesmetadatalist = $this->find_notes_metadata($filter, $offset, $this->itemsperpage);
+                    $pages = ceil($notesmetadatalist->totalNotes / $this->itemsperpage);
+                    $folders = $this->build_notes_list($notesmetadatalist->notes, $path);
+                    break;
+                // Display the saved searchs.
+                case 'searchs':
+                    if (empty($guid)) {
+                        $savedsearchs = $this->get_notestore()->listSearches($this->accesstoken);
+                        $folders = $this->build_savedsearch_list($savedsearchs, $rootpath);
+                    } else {
+                        $search = $this->get_notestore()->getSearch($this->accesstoken, $guid);
+                        $filter = new NoteFilter(array('words' => $search->query));
+                        $notesmetadatalist = $this->find_notes_metadata($filter, $offset, $this->itemsperpage);
+                        $pages = ceil($notesmetadatalist->totalNotes / $this->itemsperpage);
+                        $folders = $this->build_notes_list($notesmetadatalist->notes, $path);
+                    }
+                    break;
+                // This is a note.
+                case 'note':
+                    $note = $this->get_notestore()->getNote($this->accesstoken, $guid, false, false, false, false);
+                    $files = $this->build_note_content($note);
+                    break;
+                // Custom search from the user.
+                case 'mysearch':
+                    return $this->search($guid, 0);
+                    break;
+                // Display the default choices.
+                case 'root':
+                default:
+                    $options = array(
+                        'all' => get_string('allnotes', 'repository_evernote'),
+                        'notebooks' => get_string('notebooks', 'repository_evernote'),
+                        'tags' => get_string('tags', 'repository_evernote'),
+                        'searchs' => get_string('savedsearchs', 'repository_evernote')
+                    );
+                    foreach ($options as $key => $option) {
+                        $folders[] = array(
+                            'title' => $option,
+                            'path' => $this->build_node_path($key),
+                            'thumbnail' => $OUTPUT->pix_url(file_folder_icon(64))->out(false),
+                            'thumbnail_height' => 64,
+                            'thumbnail_width' => 64,
+                            'children' => array()
+                        );
+                    }
+                    break;
+            }
         }
 
-        switch ($mode) {
-            // Display all the notes.
-            case 'all':
-                $filter = new NoteFilter();
-                $notesmetadatalist = $this->find_notes_metadata($filter, $offset, $this->itemsperpage);
-                $pages = ceil($notesmetadatalist->totalNotes / $this->itemsperpage);
-                $folders = $this->build_notes_list($notesmetadatalist->notes, $path);
-                break;
-            // Display the tags, or notes in the tags.
-            case 'tags':
-                if (empty($guid)) {
-                    $tags = $this->get_notestore()->listTags($this->accesstoken);
-                    $folders = $this->build_tags_list($tags, $rootpath);
-                } else {
-                    $filter = new NoteFilter(array('tagGuids' => array($guid)));
-                    $notesmetadatalist = $this->find_notes_metadata($filter, $offset, $this->itemsperpage);
-                    $pages = ceil($notesmetadatalist->totalNotes / $this->itemsperpage);
-                    $folders = $this->build_notes_list($notesmetadatalist->notes, $path);
-                }
-                break;
-            // Display the notebooks and stacks.
-            case 'notebooks':
-                $notebooks = $this->get_notestore()->listNotebooks($this->accesstoken);
-                $folders = $this->build_notebooks_list($notebooks, $path);
-                break;
-            // Display notebooks within a stack.
-            case 'stack':
-                $notebooks = $this->get_notestore()->listNotebooks($this->accesstoken);
-                $folders = $this->build_notebooks_list($notebooks, $path, $guid);
-                break;
-            // Display the notes in a notebook.
-            case 'notebook':
-                $filter = new NoteFilter(array('notebookGuid' => $guid));
-                $notesmetadatalist = $this->find_notes_metadata($filter, $offset, $this->itemsperpage);
-                $pages = ceil($notesmetadatalist->totalNotes / $this->itemsperpage);
-                $folders = $this->build_notes_list($notesmetadatalist->notes, $path);
-                break;
-            // Display the saved searchs.
-            case 'searchs':
-                if (empty($guid)) {
-                    $savedsearchs = $this->get_notestore()->listSearches($this->accesstoken);
-                    $folders = $this->build_savedsearch_list($savedsearchs, $rootpath);
-                } else {
-                    $search = $this->get_notestore()->getSearch($this->accesstoken, $guid);
-                    $filter = new NoteFilter(array('words' => $search->query));
-                    $notesmetadatalist = $this->find_notes_metadata($filter, $offset, $this->itemsperpage);
-                    $pages = ceil($notesmetadatalist->totalNotes / $this->itemsperpage);
-                    $folders = $this->build_notes_list($notesmetadatalist->notes, $path);
-                }
-                break;
-            // This is a note.
-            case 'note':
-                $note = $this->get_notestore()->getNote($this->accesstoken, $guid, false, false, false, false);
-                $files = $this->build_note_content($note);
-                break;
-            // Custom search from the user.
-            case 'mysearch':
-                return $this->search($guid, 0);
-                break;
-            // Display the default choices.
-            case 'root':
-            default:
-                $options = array(
-                    'all' => get_string('allnotes', 'repository_evernote'),
-                    'notebooks' => get_string('notebooks', 'repository_evernote'),
-                    'tags' => get_string('tags', 'repository_evernote'),
-                    'searchs' => get_string('savedsearchs', 'repository_evernote')
-                );
-                foreach ($options as $key => $option) {
-                    $folders[] = array(
-                        'title' => $option,
-                        'path' => $this->build_node_path($key),
-                        'thumbnail' => $OUTPUT->pix_url(file_folder_icon(64))->out(false),
-                        'thumbnail_height' => 64,
-                        'thumbnail_width' => 64,
-                        'children' => array()
-                    );
-                }
-                break;
-        }
+        // Set in the cache, before filtering because the filters can be different
+        // from one page to another, but the cache should remain the same.
+        $this->cache_set($cachekey, array(
+            'files' => $files,
+            'folders' => $folders
+        ));
 
         // Filtering the files to remove non-compatible files.
         $files = array_filter($files, array($this, 'filter'));
@@ -809,6 +883,7 @@ class repository_evernote extends repository {
             $result['page'] = $page;
             $result['pages'] = $pages;
         }
+
         return $result;
     }
 
@@ -930,6 +1005,7 @@ class repository_evernote extends repository {
      * @return string from {@link evernote_repository::print_login()}
      */
     public function logout() {
+        $this->cache_purge();
         set_user_preference(self::SETTINGPREFIX.'accesstoken', '');
         set_user_preference(self::SETTINGPREFIX.'notestoreurl', '');
         set_user_preference(self::SETTINGPREFIX.'userid', '');
@@ -1023,6 +1099,7 @@ class repository_evernote extends repository {
         header('Location: ' . $ref->url);
         die();
     }
+
     /**
      * Type of files supported.
      *
