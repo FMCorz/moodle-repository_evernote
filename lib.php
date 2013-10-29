@@ -342,8 +342,7 @@ class repository_evernote extends repository {
                 'thumbnail_height' => 64,
                 'thumbnail_width' => 64,
             );
-            // TODO use core_collator.
-            collatorlib::ksort($resources);
+            self::ksort($resources);
         }
         // Get rid of the keys as file picker does not support them.
         return array_values($resources);
@@ -397,7 +396,7 @@ class repository_evernote extends repository {
                 );
             }
         }
-        collatorlib::ksort($notebooks);
+        self::ksort($notebooks);
         return $notebooks;
     }
 
@@ -453,7 +452,7 @@ class repository_evernote extends repository {
                 'children' => array(),
             );
         }
-        collatorlib::ksort($searchs);
+        self::ksort($searchs);
         return $searchs;
     }
 
@@ -479,7 +478,7 @@ class repository_evernote extends repository {
                 'children' => array(),
             );
         }
-        collatorlib::ksort($tags);
+        self::ksort($tags);
         return $tags;
     }
 
@@ -908,6 +907,21 @@ class repository_evernote extends repository {
             $this->userstore = new UserStoreClient($userstoreprotocol, $userstoreprotocol);
         }
         return $this->userstore;
+    }
+
+    /**
+     * Sort an array by key.
+     *
+     * @param array $array
+     * @return void
+     */
+    public static function ksort(&$array) {
+        // The class collatorlib has been deprecated from 2.6.
+        if (class_exists('core_collator')) {
+            core_collator::ksort($array, core_collator::SORT_NATURAL);
+        } else{
+            collatorlib::ksort($array, collatorlib::SORT_NATURAL);
+        }
     }
 
     /**
