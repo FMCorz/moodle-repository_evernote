@@ -16,7 +16,7 @@ Features
 Requirements
 ------------
 
-Moodle 2.3.0 or greater.
+Moodle 2.3.2 or greater.
 
 Advanced search
 ---------------

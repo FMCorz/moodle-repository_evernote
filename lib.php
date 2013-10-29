@@ -587,14 +587,7 @@ class repository_evernote extends repository {
      * @return array containing information about the file saved
      */
     public function get_file($reference, $filename = '') {
-        // Ensure compatibility with earlier versions of Moodle 2.3 which did not use repository::get_file_reference().
-        $unserialized = @unserialize($reference);
-        if ($unserialized) {
-            $ref = $unserialized;
-        } else {
-            $ref = new stdClass();
-            $ref->source = $reference;
-        }
+        $ref = unserialize($reference);
         if (strpos($ref->source, 'resource:') === 0) {
             // This file is downloaded directly from the user account.
             list($lost, $guid) = explode(':', $ref->source, 2);
@@ -619,7 +612,7 @@ class repository_evernote extends repository {
      * @return array containing the filesize.
      */
     public function get_file_by_reference($reference) {
-        $ref = @unserialize($reference->reference);
+        $ref = unserialize($reference->reference);
         try {
             $c = new curl();
             $result = $c->head($ref->url);
