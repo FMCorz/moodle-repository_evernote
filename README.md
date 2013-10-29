@@ -12,6 +12,7 @@ Features
 - Browse your tags.
 - Browse your saved searchs.
 - Search through your notes.
+- Support for file references (alias/shortcut).
 
 Requirements
 ------------
@@ -37,7 +38,6 @@ Note: The 'Full access' is required to read the content of your notes.
 Todo
 ----
 
-- Support for file references.
 - Enable paging (blocked by MDL-35664).
 - Get the content of the note as a PDF.
 - Being able to pick a note's URL property.
