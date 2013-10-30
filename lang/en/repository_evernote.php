@@ -33,6 +33,7 @@ $string['nopermissiontoaccessnotes'] = 'No permission to access your notes, plea
 $string['notebooks'] = 'Notebooks';
 $string['pluginname'] = 'Evernote';
 $string['pluginname_help'] = 'Repository on Evernote';
+$string['referencedetails'] = '{$a->name}: {$a->fullname}';
 $string['requesttokenerror'] = 'Failure while initialising the authentication. Please check that your API key and secret are valid and enabled on the chosen server.';
 $string['savedsearchs'] = 'Saved searchs';
 $string['secret'] = 'Consumer secret';
