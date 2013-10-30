@@ -648,7 +648,7 @@ class repository_evernote extends repository {
     }
 
     /**
-     * Downloads the file to Moodle.
+     * Gets a file from a reference.
      *
      * @param mixed $reference to the file, {@link repository_evernote::get_file_reference()}
      * @param string $filename name to save the file to
@@ -656,18 +656,38 @@ class repository_evernote extends repository {
      */
     public function get_file($reference, $filename = '') {
         $ref = unserialize($reference);
-        if (strpos($ref->source, 'resource:') === 0) {
-            // This file is downloaded directly from the user account.
-            list($lost, $guid) = explode(':', $ref->source, 2);
-            try {
-                $resource = $this->get_notestore()->getResource($this->accesstoken, $guid, true, false, true, false);
-                $path = $this->prepare_file($filename);
-                $fp = fopen($path, 'wb');
-                fwrite($fp, $resource->data->body);
-                fclose($fp);
+        $path = $this->prepare_file($filename);
+        if (!empty($ref->url)) {
+            // A share link has been created for that file.
+            $c = new curl();
+            $result = $c->download_one($ref->url, null, array('filepath' => $path,
+                'timeout' => self::GETFILE_TIMEOUT, 'followlocation' => true));
+            $info = $c->get_info();
+            if ($result !== true || !isset($info['http_code']) || $info['http_code'] != 200) {
+                // Do not do anything...
+            } else {
                 return array('path' => $path);
-            } catch (Exception $e) {
-                // Don't do anything, the exception will be thrown at the end of this function.
+            }
+        } else {
+            $guid = false;
+            if (isset($ref->guid)) {
+                $guid = $ref->guid;
+            } else if (strpos($ref->source, 'resource:') === 0) {
+                list($lost, $guid) = explode(':', $ref->source, 2);
+            }
+
+            if (!empty($guid)) {
+                // This file is downloaded directly from the user account. This should happen as the user is still
+                // browsing the repository, meaning that we have access to his access token.
+                try {
+                    $resource = $this->get_notestore()->getResource($this->accesstoken, $guid, true, false, true, false);
+                    $fp = fopen($path, 'wb');
+                    fwrite($fp, $resource->data->body);
+                    fclose($fp);
+                    return array('path' => $path);
+                } catch (Exception $e) {
+                    // Don't do anything, the exception will be thrown at the end of this function.
+                }
             }
         }
         throw new repository_exception('cannotdownload', 'repository');
@@ -712,23 +732,29 @@ class repository_evernote extends repository {
             list($resource, $note) = explode('|', $source, 2);
             list($lost, $guid) = explode(':', $resource, 2);
             list($lost, $noteid) = explode(':', $note, 2);
-            try {
-                $user = $this->get_userstore()->getUser($this->accesstoken);
-                $usershareid = $user->shardId;
-                $sharekey = $this->get_notestore()->shareNote($this->accesstoken, $noteid);
-                $url = $this->get_api_url() . '/shard/' . $usershareid . '/sh/' . $noteid . '/' . $sharekey . '/res/' . $guid;
 
-                $reference = new stdClass();
-                $reference->url = $url;
-                $reference->source = $source;
-                $reference->userid = $USER->id;
-                $reference->username = fullname($USER);
+            $reference = new stdClass();
+            $reference->source = $source;
+            $reference->guid = $guid;
+            $reference->noteid = $noteid;
+            $reference->userid = $USER->id;
+            $reference->username = fullname($USER);
+            $reference->url = '';
 
-                return serialize($reference);
-            } catch (Exception $e) {
+            if (optional_param('usefilereference', false, PARAM_BOOL)) {
+                try {
+                    $user = $this->get_userstore()->getUser($this->accesstoken);
+                    $usershareid = $user->shardId;
+                    $sharekey = $this->get_notestore()->shareNote($this->accesstoken, $noteid);
+                    $url = $this->get_api_url() . '/shard/' . $usershareid . '/sh/' . $noteid . '/' . $sharekey . '/res/' . $guid;
+                    $reference->url = $url;
+                } catch (Exception $e) {
+                    throw new repository_exception('Error while sharing the note to get a download URL');
+                }
             }
+            return serialize($reference);
         }
-        throw new coding_exception('Error while sharing the get a reference');
+        throw new coding_exception('Error while creating a reference object');
     }
 
     /**
