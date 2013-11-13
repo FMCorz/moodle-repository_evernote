@@ -25,6 +25,7 @@
  */
 
 $string['allnotes'] = 'All notes';
+$string['cachedef_requests'] = 'Server requests';
 $string['configplugin'] = 'Evernote configuration';
 $string['evernote'] = 'Evernote';
 $string['evernote:view'] = 'View Evernote repository';
