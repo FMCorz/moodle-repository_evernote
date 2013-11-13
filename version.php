@@ -29,5 +29,5 @@ defined('MOODLE_INTERNAL') || die();
 $plugin->version   = 2013113000;        // The current plugin version (Date: YYYYMMDDXX)
 $plugin->requires  = 2012062502;        // Requires this Moodle version
 $plugin->maturity  = MATURITY_STABLE;   // Maturity of the plugin
-$plugin->release   = '1.2.1';           // Release name
+$plugin->release   = '1.2.2';           // Release name
 $plugin->component = 'repository_evernote'; // Full name of the plugin (used for diagnostics)
